@@ -12,13 +12,13 @@ mkdir -p bin/
 [[ -n "${GOARCH}" ]] || { echo "Unsupported platform: $(uname -m)" 1>&2 ; exit 1 ; }
 
 
-KIND_VERSION=0.31.0
-if [[ ! -f "${ARGOCD_MOD_ROOT}/bin/.checkpoint-kind" ]]; then
-  echo "🚀 Downloading kind"
-  curl -Lo "${ARGOCD_MOD_ROOT}/bin/kind" "https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-${GOOS}-${GOARCH}"
-  chmod +x "${ARGOCD_MOD_ROOT}/bin/kind"
-  touch "${ARGOCD_MOD_ROOT}/bin/.checkpoint-kind"
-fi
+#KIND_VERSION=0.31.0
+#if [[ ! -f "${ARGOCD_MOD_ROOT}/bin/.checkpoint-kind" ]]; then
+#  echo "🚀 Downloading kind"
+#  curl -Lo "${ARGOCD_MOD_ROOT}/bin/kind" "https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-${GOOS}-${GOARCH}"
+#  chmod +x "${ARGOCD_MOD_ROOT}/bin/kind"
+#  touch "${ARGOCD_MOD_ROOT}/bin/.checkpoint-kind"
+#fi
 
 KUBECTL_VERSION=1.35.0
 if [[ ! -f "${ARGOCD_MOD_ROOT}/bin/.checkpoint-kubectl" ]]; then
@@ -53,7 +53,7 @@ if [[ ! -f "${ARGOCD_MOD_ROOT}/bin/.checkpoint-yq" ]]; then
 fi
 
 # install k3d
-if [[ ! -f ./k3d ]]; then
+if [[ ! -f ./bin/k3d ]]; then
   export K3D_INSTALL_DIR="${BASEDIR:-$(pwd)}/bin/"
   export USE_SUDO='false'
   export PATH=$PATH:${BASEDIR} # k3d install fails otherwise
