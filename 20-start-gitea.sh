@@ -7,13 +7,11 @@ cd $BASEDIR
 source ./.env
 
 
-cat << EOF > container/.env
-GITEA=${GITEA}
-USER_UID=$(id -u)
-USER_GID=$(id -g)
-EOF
+write-container-env
 
-docker compose --project-directory container up -d
+# scoped to gitea: db2 is a service in the same compose project, started by
+# ./25-start-db2.sh
+docker compose --project-directory container up -d gitea
 
 is_healthy() {
     service="$1"

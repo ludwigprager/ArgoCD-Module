@@ -71,3 +71,46 @@ function cluster-exists() {
 
 export -f cluster-exists
 
+
+### Db2 ###################################################################
+
+# LD_LIBRARY_PATH lives here rather than in misc/env.tpl because envsubst
+# mangles the ${VAR:+...} guard: it substitutes the inner reference away and
+# leaves `${LD_LIBRARY_PATH:+:}` behind. utils.sh is appended to .env verbatim,
+# so the guard survives. The case block keeps re-sourcing .env idempotent.
+case ":${LD_LIBRARY_PATH:-}:" in
+  *":${ARGOCD_MOD_ROOT}/bin/clidriver/lib:"*) ;;
+  *) export LD_LIBRARY_PATH="${ARGOCD_MOD_ROOT}/bin/clidriver/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" ;;
+esac
+
+# container/.env feeds docker compose. Both 20-start-gitea.sh and
+# 25-start-db2.sh write it in full, so either stage runs standalone: compose
+# interpolates the whole file even when only one service is targeted.
+function write-container-env() {
+  cat << INNER > ${ARGOCD_MOD_ROOT}/container/.env
+GITEA=${GITEA}
+USER_UID=$(id -u)
+USER_GID=$(id -g)
+DB2=${DB2}
+DB2_VERSION=${DB2_VERSION}
+DB2_LICENSE=${DB2_LICENSE}
+DB2_INSTANCE=${DB2_INSTANCE}
+DB2_PASSWORD=${DB2_PASSWORD}
+DB2_DBNAME=${DB2_DBNAME}
+DB2_PORT=${DB2_PORT}
+INNER
+}
+export -f write-container-env
+
+# The Db2 entrypoint prints this once the instance and DBNAME are both up.
+# It is the only reliable readiness signal - the port listens minutes earlier.
+function db2-is-ready() {
+  docker logs ${DB2} 2>&1 | grep -q 'Setup has completed'
+}
+export -f db2-is-ready
+
+# Run a db2 CLP command as the instance owner.
+function db2-clp() {
+  docker exec ${DB2} su - ${DB2_INSTANCE} -c "db2 $*"
+}
+export -f db2-clp

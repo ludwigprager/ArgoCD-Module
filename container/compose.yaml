@@ -28,3 +28,37 @@ services:
       retries: 5
 #   volumes:
 #     - ./gitea-data:/data
+
+  db2:
+    image: 'icr.io/db2_community/db2:${DB2_VERSION}'
+
+    hostname: "${DB2}"
+    container_name: ${DB2}
+    # Db2 sets kernel and IPC parameters while creating the instance; the
+    # community image does not start without full privileges.
+    privileged: true
+    # docker's default 64m /dev/shm is too small for the Db2 engine
+    shm_size: '2gb'
+    environment:
+      - LICENSE=${DB2_LICENSE}
+      - DB2INSTANCE=${DB2_INSTANCE}
+      - DB2INST1_PASSWORD=${DB2_PASSWORD}
+      - DBNAME=${DB2_DBNAME}
+      - BLU=false
+      - ENABLE_ORACLE_COMPATIBILITY=false
+      - UPDATEAVAIL=NO
+      - TO_CREATE_SAMPLEDB=false
+      - REPODB=false
+      - IS_OSXFS=false
+      - PERSISTENT_HOME=true
+      - HADR_ENABLED=false
+    restart: unless-stopped
+    ports:
+      - '${DB2_PORT}:50000'
+    volumes:
+      # state stays inside the clone, like container/gitea-data: a named volume
+      # would survive `rm -rf` of the clone as orphaned residue, and its
+      # docker-global name would collide between two clones of this module.
+      # Db2 writes this as root - ../90-teardown.sh deletes it from inside a
+      # container. This is also the mount IBM's own docs use.
+      - ./db2-data:/database

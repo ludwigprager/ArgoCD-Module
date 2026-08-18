@@ -27,3 +27,4 @@ podinfo.[0-9]*
 bin/
 
 container/gitea-data/
+container/db2-data/

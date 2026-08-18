@@ -61,3 +61,20 @@ if [[ ! -f ./bin/k3d ]]; then
 fi
 
 
+
+# IBM CLI driver - what go_ibm_db links against via cgo. Pinned to the same
+# level as the Db2 server image (see DB2_VERSION in misc/env.tpl).
+case "${GOOS}/${GOARCH}" in
+  linux/amd64)  CLIDRIVER_FILE=linuxx64_odbc_cli.tar.gz ;;
+  darwin/arm64) CLIDRIVER_FILE=macarm64_odbc_cli.tar.gz ;;
+  *) echo "IBM ships no clidriver for ${GOOS}/${GOARCH}" 1>&2 ; exit 1 ;;
+esac
+
+if [[ ! -f "${ARGOCD_MOD_ROOT}/bin/.checkpoint-clidriver" ]]; then
+  echo "🚀 Downloading IBM clidriver ${CLIDRIVER_VERSION}"
+  curl -Lo "${ARGOCD_MOD_ROOT}/bin/clidriver.tar.gz" \
+    "https://public.dhe.ibm.com/ibmdl/export/pub/software/data/db2/drivers/odbc_cli/${CLIDRIVER_VERSION}/${CLIDRIVER_FILE}"
+  tar -xzf "${ARGOCD_MOD_ROOT}/bin/clidriver.tar.gz" -C "${ARGOCD_MOD_ROOT}/bin/"
+  rm -f "${ARGOCD_MOD_ROOT}/bin/clidriver.tar.gz"
+  touch "${ARGOCD_MOD_ROOT}/bin/.checkpoint-clidriver"
+fi
