@@ -32,5 +32,9 @@ done
 # prove the database actually answers, not just that setup printed a line
 db2-clp "connect to ${DB2_DBNAME}"
 
+PRIMARY_IP=$(get-primary-ip)
 echo
 echo "db2 ${DB2_VERSION} ready: ${DB2_DBNAME} on port ${DB2_PORT}"
+echo "dsn:      DATABASE=${DB2_DBNAME};HOSTNAME=${PRIMARY_IP};PORT=${DB2_PORT};PROTOCOL=TCPIP;UID=${DB2_INSTANCE};PWD=${DB2_PASSWORD};"
+echo "clp:      docker exec -it ${DB2} su - ${DB2_INSTANCE}"
+echo "clidriver: ${IBM_DB_HOME}"

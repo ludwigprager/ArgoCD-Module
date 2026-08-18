@@ -56,7 +56,9 @@ get-primary-ip() {
 function cluster-exists() {
   local cluster_name=$1
   #local K3D=$(get-k3d-path)
-  local K3D=${BASEDIR}/k3d
+  # ARGOCD_MOD_ROOT, not BASEDIR: .env carries it as an absolute path, so the
+  # helper also works when .env is sourced from an interactive shell.
+  local K3D=${ARGOCD_MOD_ROOT}/bin/k3d
 
   # need a blank after name. Else prefix would work, too.
   COUNT=$(${K3D} cluster list | grep ^${cluster_name}\  | wc -l)
@@ -98,6 +100,12 @@ DB2_INSTANCE=${DB2_INSTANCE}
 DB2_PASSWORD=${DB2_PASSWORD}
 DB2_DBNAME=${DB2_DBNAME}
 DB2_PORT=${DB2_PORT}
+MSSQL=${MSSQL}
+MSSQL_VERSION=${MSSQL_VERSION}
+MSSQL_EULA=${MSSQL_EULA}
+MSSQL_PID=${MSSQL_PID}
+MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+MSSQL_PORT=${MSSQL_PORT}
 INNER
 }
 export -f write-container-env
@@ -114,3 +122,22 @@ function db2-clp() {
   docker exec ${DB2} su - ${DB2_INSTANCE} -c "db2 $*"
 }
 export -f db2-clp
+
+### Microsoft SQL Server ##################################################
+
+# Readiness is a successful login, not a log line: SQL Server prints "ready
+# for client connections" while still applying the SA password, so a query
+# issued on that signal fails with "Login failed for user 'sa'".
+function mssql-is-ready() {
+  docker exec ${MSSQL} /opt/mssql-tools18/bin/sqlcmd \
+    -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -C -Q "SELECT 1" > /dev/null 2>&1
+}
+export -f mssql-is-ready
+
+# Run a T-SQL batch as sa. The image ships sqlcmd under mssql-tools18, which
+# defaults to an encrypted connection against a self-signed cert, hence -C.
+function mssql-q() {
+  docker exec ${MSSQL} /opt/mssql-tools18/bin/sqlcmd \
+    -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -C -Q "$*"
+}
+export -f mssql-q

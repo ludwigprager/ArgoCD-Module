@@ -62,3 +62,29 @@ services:
       # Db2 writes this as root - ../90-teardown.sh deletes it from inside a
       # container. This is also the mount IBM's own docs use.
       - ./db2-data:/database
+      # The db2 image declares VOLUME /hadr. Left alone, docker creates an
+      # anonymous volume for it per container, and `compose down -v` does not
+      # reliably remove it - verified: one survived a clean teardown. Binding
+      # it into the clone means no anonymous volume is ever created.
+      - ./db2-hadr:/hadr
+
+  mssql:
+    image: 'mcr.microsoft.com/mssql/server:${MSSQL_VERSION}'
+
+    hostname: "${MSSQL}"
+    container_name: ${MSSQL}
+    # The image already runs as the non-root user `mssql` (uid 10001), so it
+    # cannot write a bind mount owned by the host user. Running it as the host
+    # user instead is the same trick gitea uses, and it is what keeps
+    # ./mssql-data removable by a plain `rm -rf` of the clone - no privileged
+    # container needed to clean up, unlike db2.
+    user: "${USER_UID}:${USER_GID}"
+    environment:
+      - ACCEPT_EULA=${MSSQL_EULA}
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - MSSQL_PID=${MSSQL_PID}
+    restart: unless-stopped
+    ports:
+      - '${MSSQL_PORT}:1433'
+    volumes:
+      - ./mssql-data:/var/opt/mssql

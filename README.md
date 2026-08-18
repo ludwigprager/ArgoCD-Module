@@ -84,6 +84,36 @@ Notes and limitations:
   easier, but it survives `rm -rf` of the clone as orphaned residue and its docker-global
   name collides between two clones.
 
+## Microsoft SQL Server
+
+[27-start-mssql.sh](./27-start-mssql.sh) starts SQL Server 2025 Developer edition next to
+gitea and db2, pinned to `mcr.microsoft.com/mssql/server:2025-CU8-ubuntu-24.04`, and
+creates `TESTDB`.
+
+Unlike Db2, **no driver download is needed**: Go talks to SQL Server through
+[go-mssqldb](https://github.com/microsoft/go-mssqldb), which is pure Go and needs neither
+cgo nor a vendor client library. So there is nothing in `./bin/` for it and nothing to
+keep version-matched with the server. The ODBC route (`msodbcsql18`) would need a
+distro package installed with sudo, which the module deliberately avoids.
+
+```
+sqlserver://sa:<password>@<host>:1433?database=TESTDB
+```
+
+Notes and limitations:
+- **amd64 only**, same as Db2 - Microsoft publishes no arm64 SQL Server container image.
+- **strong SA password required.** SQL Server wants 8+ characters from three of upper
+  case, lower case, digits and symbols. A weak one makes the container exit during setup
+  rather than report a bad password, which looks like a crash.
+- **Developer edition** (`MSSQL_PID=Developer`) is free for development and test and is
+  not licensed for production. Starting the container accepts the Microsoft EULA.
+- Data lives in `container/mssql-data` inside the clone. The image runs as its own
+  non-root user, so the stage runs it as the host user instead
+  (`user: "${USER_UID}:${USER_GID}"`, the same trick gitea uses) and creates the directory
+  first - docker would otherwise create the bind-mount source as root and SQL Server could
+  not write it. That keeps the data plainly removable, so unlike db2 the teardown needs no
+  container to delete it.
+
 # Possible Applications
 - resiliency tests: ArgoCD autorepairs a number of properties, but details are hard to determine without practical usage.
 - promotion from pre-prod to prod: you can start a prod and pre-prod cluster with k3d and test your promotion code.
@@ -112,3 +142,5 @@ https://github.com/stefanprodan/podinfo
 https://hub.docker.com/r/rancher/k3s/tags  
 https://github.com/ibmdb/go_ibm_db  
 https://www.ibm.com/docs/en/db2/12.1.0?topic=system-db2-community-edition-linux  
+https://github.com/microsoft/go-mssqldb  
+https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker  

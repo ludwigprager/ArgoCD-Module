@@ -62,6 +62,23 @@ export CGO_CFLAGS="-I${ARGOCD_MOD_ROOT}/bin/clidriver/include"
 export CGO_LDFLAGS="-L${ARGOCD_MOD_ROOT}/bin/clidriver/lib"
 # LD_LIBRARY_PATH is set in misc/utils.sh - see the note there.
 
+### Microsoft SQL Server ##################################################
+# amd64 only, like Db2 - there is no arm64 SQL Server container image.
+export MSSQL=mssqlserver
+export MSSQL_VERSION=2025-CU8-ubuntu-24.04
+
+# Starting the container accepts the Microsoft EULA. Developer edition is
+# free for development and test, and is not licensed for production.
+export MSSQL_EULA=Y
+export MSSQL_PID=Developer
+
+# SQL Server enforces a strong SA password: 8+ characters from three of
+# upper case, lower case, digits, symbols. A weak one makes the container
+# exit during setup instead of reporting a bad password.
+export MSSQL_SA_PASSWORD='Geheim123!'
+export MSSQL_DBNAME=TESTDB
+export MSSQL_PORT=1433
+
 export http_proxy=""
 
 ## Use GNU's gsed when on macOS

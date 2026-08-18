@@ -26,11 +26,14 @@ docker compose --project-directory container down -v
 # Db2 writes container/db2-data as root. Delete it from inside a container so
 # no sudo is needed and `rm -rf` of the clone is enough to finish the job.
 # The db2 image is already local at this point, so teardown stays offline.
-if [[ -d container/db2-data ]]; then
+# mssql runs as the host user, so its data dir needs no container to remove
+rm -rf container/mssql-data || true
+
+if [[ -d container/db2-data || -d container/db2-hadr ]]; then
   docker run --rm --entrypoint /bin/rm \
     -v ${BASEDIR}/container:/work \
-    icr.io/db2_community/db2:${DB2_VERSION} -rf /work/db2-data || true
-  rm -rf container/db2-data || true
+    icr.io/db2_community/db2:${DB2_VERSION} -rf /work/db2-data /work/db2-hadr || true
+  rm -rf container/db2-data container/db2-hadr || true
 fi
 
 
