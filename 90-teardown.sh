@@ -18,7 +18,10 @@ for app in ${APPS}; do
 done
 mv container/gitea-data/ container/gitea-data.${MY_RANDOM}/
 
-docker compose --project-directory container down
+# -v is for the anonymous volume the db2 image declares for /hadr, not for
+# module state: state lives in container/db2-data inside the clone. Without -v
+# every db2 container leaks one orphaned volume.
+docker compose --project-directory container down -v
 
 # Db2 writes container/db2-data as root. Delete it from inside a container so
 # no sudo is needed and `rm -rf` of the clone is enough to finish the job.
